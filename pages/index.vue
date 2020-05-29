@@ -181,10 +181,7 @@
                   class="relative inline-flex items-center px-4 py-2 mr-4 border border-gray-400 text-xs leading-5 font-medium rounded-md text-gray-500 bg-transparent hover:bg-gray-100"
                   :class="{' border-red-400 text-red-500 hover:bg-red-100': bugCounts[caseHash]}"
                 >
-                  <span
-                    v-if="bugCounts[caseHash]"
-                    class="text-red-600 mr-3"
-                  >Add comment to this bug</span>
+                  <span v-if="bugCounts[caseHash]" class="text-red-600 mr-3">Add comment to this bug</span>
                   <span v-else class="mr-2">Report a bug</span>
                   <span
                     v-show="bugCounts[caseHash]"
@@ -600,6 +597,7 @@ export default {
         this.bugCountsRefreshedAt < 0 ||
         this.bugCountsRefreshedAt + 3600 > new Date().getTime()
       ) {
+        console.log("refreshBugCounts");
         return db
           .query(
             q.ToObject(
@@ -615,6 +613,7 @@ export default {
           .then(res => {
             if (res) {
               this.bugCounts = res;
+              this.bugCountsRefreshedAt = new Date().getTime();
             } else {
             }
           })
