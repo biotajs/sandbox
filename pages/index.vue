@@ -171,18 +171,28 @@
               <h3 class="text-lg leading-6 font-medium text-gray-300">Sandbox</h3>
             </div>
             <div class="ml-4 mt-2 flex-shrink-0 flex flex-row justify-end items-center">
-              <div
+              <!-- <div
                 v-show="bugCounts[this.caseHash]"
                 class="text-xs text-red-600 underline mr-4"
-              >{{`Bug reported for this scenario (${pluralize('time', bugCounts[this.caseHash], true)})` }}</div>
+              >{{`Bug reported for this scenario (${pluralize('time', bugCounts[this.caseHash], true)})` }}</div>-->
               <dropdown>
                 <button
                   type="button"
                   class="relative inline-flex items-center px-4 py-2 mr-4 border border-gray-400 text-xs leading-5 font-medium rounded-md text-gray-500 bg-transparent hover:bg-gray-100"
+                  :class="{' border-red-400 text-red-500 hover:bg-red-100': bugCounts[caseHash]}"
                 >
-                  Report a bug
+                  <span
+                    v-if="bugCounts[caseHash]"
+                    class="text-red-600 mr-3"
+                  >Add comment to this bug</span>
+                  <span v-else class="mr-2">Report a bug</span>
+                  <span
+                    v-show="bugCounts[caseHash]"
+                    class="font-bold text-red-600"
+                  >{{bugCounts[caseHash]}}</span>
                   <svg
-                    class="-mr-1 ml-2 h-4 w-4"
+                    class="-mr-1 h-4 w-4"
+                    :class="{'text-red-600': bugCounts[caseHash]}"
                     fill="none"
                     stroke-linecap="round"
                     stroke-linejoin="round"
@@ -207,6 +217,13 @@
                     <div class="mt-2 flex flex-row items-end justify-between">
                       <p class="text-sm text-gray-400">Add some comments if needs be.</p>
                       <button
+                        v-if="bugCounts[caseHash]"
+                        @click="() => {close(); reportBug();} "
+                        type="button"
+                        class="relative inline-flex items-center px-3 py-1 border border-red-400 text-xs leading-5 font-medium rounded-md text-red-500 bg-transparent hover:bg-red-100"
+                      >Add comment</button>
+                      <button
+                        v-else
                         @click="() => {close(); reportBug();} "
                         type="button"
                         class="relative inline-flex items-center px-3 py-1 border border-gray-400 text-xs leading-5 font-medium rounded-md text-gray-500 bg-transparent hover:bg-gray-100"
@@ -266,7 +283,10 @@
               <!-- <resize-observer class="relative" @notify="(e) => handleResize('schemaEditor')(e)" /> -->
             </div>
             <div class="flex flex-col flex-wrap">
-              <div class="border-t border-gray-200 px-10 py-8 text-sm bg-gray-50 text-gray-600">
+              <div
+                v-show="descriptionHidden"
+                class="border-t border-gray-200 px-10 py-8 text-sm bg-gray-50 text-gray-600"
+              >
                 <p class="mb-2">
                   You're in
                   <span class="text-grey-900 font-semibold">biota's schema module sandbox</span>. A
@@ -287,7 +307,17 @@
                     target="_blank"
                   >biota's channel within the Fauna Community Slack</a>.
                 </p>
+                <span class="mt-3 flex w-full rounded-md shadow-sm sm:mt-0 sm:w-auto">
+                  <button
+                    type="button"
+                    class="inline-flex justify-center w-full rounded-md border border-gray-300 px-4 py-2 bg-white text-base leading-6 font-medium text-gray-700 shadow-sm hover:text-gray-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue transition ease-in-out duration-150 sm:text-sm sm:leading-5"
+                  >Cancel</button>
+                </span>
               </div>
+              <div
+                v-show="!descriptionHidden"
+                class="border-t border-gray-200 px-10 py-8 text-sm bg-gray-50 text-gray-600"
+              ></div>
             </div>
             <div class="flex flex-col flex-wrap">
               <div
@@ -432,6 +462,7 @@ export default {
     return {
       pluralize,
       samples,
+      descriptionHidden: false,
       schema: ``,
       input: ``,
       output: ``,
@@ -463,6 +494,7 @@ export default {
     this.schema = localStorage.getItem("schema") || ``;
     this.input = localStorage.getItem("input") || ``;
     this.output = localStorage.getItem("output") || ``;
+    this.descriptionHidden = localStorage.getItem("descriptionHidden") || false;
 
     try {
       this.bugCounts = JSON.parse(localStorage.getItem("bugCounts") || `{}`);
@@ -644,6 +676,9 @@ export default {
     }
   },
   watch: {
+    descriptionHidden(descriptionHidden) {
+      localStorage.setItem("descriptionHidden", descriptionHidden);
+    },
     schema(schema) {
       localStorage.setItem("schema", schema);
     },
