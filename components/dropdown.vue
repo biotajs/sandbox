@@ -35,7 +35,7 @@
       >
         <div class="rounded-md bg-white shadow-xs">
           <div class="py-1">
-            <slot name="content">
+            <slot name="content" :close="() => isOpen = false" >
               <div
                 v-for="item of Object.entries(items || {})"
                 :key="item[0]"

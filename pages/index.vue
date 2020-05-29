@@ -170,7 +170,11 @@
             <div class="ml-4 mt-2">
               <h3 class="text-lg leading-6 font-medium text-gray-300">Sandbox</h3>
             </div>
-            <div class="ml-4 mt-2 flex-shrink-0">
+            <div class="ml-4 mt-2 flex-shrink-0 flex flex-row justify-end items-center">
+              <div
+                v-show="bugCounts[this.caseHash]"
+                class="text-xs text-red-600 underline mr-4"
+              >{{`Bug reported for this scenario (${pluralize('time', bugCounts[this.caseHash], true)})` }}</div>
               <dropdown>
                 <button
                   type="button"
@@ -189,7 +193,7 @@
                     <path d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </button>
-                <div slot="content" class="p-3">
+                <div slot="content" slot-scope="{close}" class="p-3">
                   <div class="mt-1 sm:mt-0 sm:col-span-2 flex flex-col">
                     <div>
                       <div class="max-w-lg flex rounded-md shadow-sm">
@@ -203,7 +207,7 @@
                     <div class="mt-2 flex flex-row items-end justify-between">
                       <p class="text-sm text-gray-400">Add some comments if needs be.</p>
                       <button
-                        @click="reportBug"
+                        @click="() => {close(); reportBug();} "
                         type="button"
                         class="relative inline-flex items-center px-3 py-1 border border-gray-400 text-xs leading-5 font-medium rounded-md text-gray-500 bg-transparent hover:bg-gray-100"
                       >Report</button>
@@ -214,12 +218,12 @@
               <button
                 @click="randomSample"
                 type="button"
-                class="relative inline-flex items-center px-4 py-2 text-xs leading-5 font-medium rounded-md text-white bg-gray-600 hover:bg-gray-700"
+                class="mr-3 relative inline-flex items-center px-4 py-2 text-xs leading-5 font-medium rounded-md text-white bg-gray-600 hover:bg-gray-700"
               >Random</button>
               <dropdown :items="samples" :closeOnClick="true" @choice="loadSample">
                 <button
                   type="button"
-                  class="relative inline-flex items-center px-4 py-2 mr-4 text-xs leading-5 font-medium rounded-md text-white bg-gray-900 hover:bg-gray-800"
+                  class="mr-3 relative inline-flex items-center px-4 py-2 mr-4 text-xs leading-5 font-medium rounded-md text-white bg-gray-900 hover:bg-gray-800"
                 >
                   Samples
                   <svg class="-mr-1 ml-2 h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
@@ -408,10 +412,12 @@
 </template>
 
 <script>
-import { samples } from "./samples";
-import dropdown from "~/components/dropdown";
 import pluralize from "pluralize";
 import fauna from "faunadb";
+import ushash from "ushash";
+
+import { samples } from "./samples";
+import dropdown from "~/components/dropdown";
 const q = fauna.query;
 import MonacoEditor from "vue-monaco";
 const db = new fauna.Client({ secret: process.env.FAUNA_KEY });
@@ -429,6 +435,8 @@ export default {
       schema: ``,
       input: ``,
       output: ``,
+      bugCounts: {},
+      bugCountsRefreshedAt: -1,
       bugComment: "",
       requestFailed: false,
       editorOptions: {
@@ -455,6 +463,14 @@ export default {
     this.schema = localStorage.getItem("schema") || ``;
     this.input = localStorage.getItem("input") || ``;
     this.output = localStorage.getItem("output") || ``;
+
+    try {
+      this.bugCounts = JSON.parse(localStorage.getItem("bugCounts") || `{}`);
+    } catch (error) {}
+    try {
+      this.bugCountsRefreshedAt =
+        Number(localStorage.getItem("bugCountsRefreshedAt")) || "-1";
+    } catch (error) {}
   },
   methods: {
     randomSample() {
@@ -470,13 +486,21 @@ export default {
       return db
         .query(
           q.Call("ReportBug", {
+            hash: this.hash,
+            caseHash: this.caseHash,
             message: this.bugComment,
             input: this.inputValue,
             schema: this.schemaObj,
             result: this.outputObj
           })
         )
-        .then(() => {})
+        .then(({ data }) => {
+          if (data) {
+            return this.refreshBugCounts(true);
+          } else {
+            console.log("failed");
+          }
+        })
         .catch(() => {});
     },
     shortcuts(e) {
@@ -486,40 +510,7 @@ export default {
         this.process();
       }
     },
-    // handleResize(refName) {
-    //   return e => {
-    //     try {
-    //       this.$refs[refName].editor.layout({ height: 1, width: 1 });
-    //       const parent = this.$refs[refName].$el.parentNode;
-    //       const dim = {
-    //         width: parent.offsetWidth,
-    //         height: parent.offsetHeight
-    //       };
-    //       console.log("this.$refs[refName].editor.layout()", refName, e, dim);
-    //       this.$refs[refName].editor.layout(dim);
-    //     } catch (error) {
-    //       console.error(error);
-    //     }
-    //   };
-    // },
-    editorWillMount(monaco) {
-      // monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
-      //   validate: true,
-      //   schemas: [
-      //     {
-      //       uri: "http://myserver/bar-schema.json",
-      //       schema: {
-      //         type: "object",
-      //         properties: {
-      //           q1: {
-      //             enum: ["x1", "x2"]
-      //           }
-      //         }
-      //       }
-      //     }
-      //   ]
-      // });
-    },
+    editorWillMount(monaco) {},
     editorDidMount(editor) {
       editor.onKeyDown(e => {
         this.shortcuts(e);
@@ -537,7 +528,10 @@ export default {
       this.output = "";
       console.log("Running query..");
       try {
-        this.requestFailed = true;
+        this.refreshBugCounts();
+      } catch (error) {}
+      try {
+        this.requestFailed = false;
         let value = JSON.parse(this.input);
         if (value && typeof value === "object") {
           if (
@@ -564,23 +558,39 @@ export default {
         this.output = JSON.stringify(results.response, null, 2);
       } catch (error) {
         this.requestFailed = true;
+        this.reportBug();
         console.error(error);
+      }
+    },
+    async refreshBugCounts(force = false) {
+      if (
+        force ||
+        this.bugCountsRefreshedAt < 0 ||
+        this.bugCountsRefreshedAt + 3600 > new Date().getTime()
+      ) {
+        return db
+          .query(
+            q.ToObject(
+              q.Select(
+                "data",
+                q.Paginate(q.Match(q.Index("bug_report__caseHash_count")), {
+                  size: 100000
+                }),
+                []
+              )
+            )
+          )
+          .then(res => {
+            if (res) {
+              this.bugCounts = res;
+            } else {
+            }
+          })
+          .catch(console.error);
       }
     }
   },
   computed: {
-    // schemaModel() {
-    //   try {
-    //     return this.$refs.schemaEditor.editor.createModel(
-    //       this.schema,
-    //       "json",
-    //       "schema.json"
-    //     );
-    //   } catch (error) {
-    //     console.error(error);
-    //     return;
-    //   }
-    // },
     inputValue() {
       try {
         return JSON.parse(this.input);
@@ -608,6 +618,29 @@ export default {
       } catch (error) {
         return "";
       }
+    },
+    hash() {
+      return ushash.hash(
+        [
+          this.bugComment || "#bugComment",
+          this.inputValue || "#inputValue",
+          this.schemaObj || "#schemaObj",
+          this.outputObj || "#outputObj"
+        ]
+          .map(JSON.stringify)
+          .join("")
+      );
+    },
+    caseHash() {
+      return ushash.hash(
+        [
+          this.inputValue || "#inputValue",
+          this.schemaObj || "#schemaObj",
+          this.outputObj || "#outputObj"
+        ]
+          .map(JSON.stringify)
+          .join("")
+      );
     }
   },
   watch: {
@@ -619,6 +652,15 @@ export default {
     },
     output(output) {
       localStorage.setItem("output", output);
+    },
+    bugCounts(bugCounts) {
+      localStorage.setItem("bugCounts", JSON.stringify(bugCounts));
+    },
+    bugCountsRefreshedAt(bugCountsRefreshedAt) {
+      localStorage.setItem(
+        "bugCountsRefreshedAt",
+        JSON.stringify(bugCountsRefreshedAt)
+      );
     }
   }
 };
