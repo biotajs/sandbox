@@ -51,7 +51,7 @@ export default {
     [
       "@nuxtjs/google-analytics",
       {
-        id: "UA-167990472-1"
+        id: "UA-167990472-2"
       }
     ]
   ],

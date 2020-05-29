@@ -2,101 +2,22 @@
   <div class="h-screen flex overflow-hidden bg-white" @keypress.ctrl="shortcuts">
     <!-- Off-canvas menu for mobile -->
     <div class="md:hidden">
-      <div class="fixed inset-0 flex z-40">
-        <!--
-        Off-canvas menu overlay, show/hide based on off-canvas menu state.
-
-        Entering: "transition-opacity ease-linear duration-300"
-          From: "opacity-0"
-          To: "opacity-100"
-        Leaving: "transition-opacity ease-linear duration-300"
-          From: "opacity-100"
-          To: "opacity-0"
-        -->
-        <div class="fixed inset-0">
-          <div class="absolute inset-0 bg-gray-600 opacity-75"></div>
-        </div>
-        <!--
-        Off-canvas menu, show/hide based on off-canvas menu state.
-
-        Entering: "transition ease-in-out duration-300 transform"
-          From: "-translate-x-full"
-          To: "translate-x-0"
-        Leaving: "transition ease-in-out duration-300 transform"
-          From: "translate-x-0"
-          To: "-translate-x-full"
-        -->
-        <div class="relative flex-1 flex flex-col max-w-xs w-full bg-white">
-          <div class="absolute top-0 right-0 -mr-14 p-1">
-            <button
-              class="flex items-center justify-center h-12 w-12 rounded-full focus:outline-none focus:bg-gray-600"
-              aria-label="Close sidebar"
-            >
-              <svg
-                class="h-6 w-6 text-white"
-                stroke="currentColor"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-          <div class="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-            <div class="flex-shrink-0 flex items-center px-4">
-              <img class="h-8 w-auto" src="/img/logos/workflow-logo-on-white.svg" alt="Workflow" />
+      <div class="fixed inset-0 flex z-40 bg-white p-10">
+        <div class="w-full flex flex-col justify-center items-center">
+          <a href="http://biota.rocks" target="_blank" class="flex-shrink-0 w-full group block">
+            <div class="flex justify-center items-center">
+              <img class="inline-block w-30" :src="'./logo_and_name.png'" alt />
             </div>
-            <nav class="mt-5 px-2">
-              <a
-                href="#"
-                class="group flex items-center px-2 py-2 text-base leading-6 font-medium text-gray-900 rounded-md bg-gray-100 focus:outline-none focus:bg-gray-200 transition ease-in-out duration-150"
-              >
-                <svg
-                  class="mr-4 h-6 w-6 text-gray-500 group-hover:text-gray-500 group-focus:text-gray-600 transition ease-in-out duration-150"
-                  stroke="currentColor"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V10M9 21h6"
-                  />
-                </svg>
-                Schema
-              </a>
-            </nav>
-          </div>
-          <!-- <div class="flex-shrink-0 flex border-t border-gray-200 p-4">
-            <a href="#" class="flex-shrink-0 group block focus:outline-none">
-              <div class="flex items-center">
-                <div>
-                  <img
-                    class="inline-block h-10 w-10 rounded-full"
-                    src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-                    alt
-                  />
-                </div>
-                <div class="ml-3">
-                  <p
-                    class="text-base leading-6 font-medium text-gray-700 group-hover:text-gray-900"
-                  >Tom Cook</p>
-                  <p
-                    class="text-sm leading-5 font-medium text-gray-500 group-hover:text-gray-700 group-focus:underline transition ease-in-out duration-150"
-                  >View profile</p>
-                </div>
+          </a>
+          <div class="rounded-md bg-red-50 p-4 mt-5">
+            <div class="flex">
+              <div>
+                <h3
+                  class="text-sm leading-5 font-medium text-red-800"
+                >The sandbox isn't available on mobile.</h3>
               </div>
-            </a>
-          </div>-->
-        </div>
-        <div class="flex-shrink-0 w-14">
-          <!-- Force sidebar to shrink to fit close icon -->
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -281,7 +202,7 @@
             </div>
             <div class="flex flex-col flex-wrap">
               <div
-                v-show="descriptionHidden"
+                v-show="!descriptionHidden"
                 class="border-t border-gray-200 px-10 py-8 text-sm bg-gray-50 text-gray-600"
               >
                 <p class="mb-2">
@@ -304,17 +225,30 @@
                     target="_blank"
                   >biota's channel within the Fauna Community Slack</a>.
                 </p>
-                <span class="mt-3 flex w-full rounded-md shadow-sm sm:mt-0 sm:w-auto">
-                  <button
-                    type="button"
-                    class="inline-flex justify-center w-full rounded-md border border-gray-300 px-4 py-2 bg-white text-base leading-6 font-medium text-gray-700 shadow-sm hover:text-gray-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue transition ease-in-out duration-150 sm:text-sm sm:leading-5"
-                  >Cancel</button>
-                </span>
+                <div class="flex justify-start mt-3">
+                  <span class="mt-3 flex rounded-md shadow-sm sm:mt-0 sm:w-auto">
+                    <button
+                      @click="descriptionHidden = true"
+                      type="button"
+                      class="inline-flex justify-center w-full rounded-md border border-gray-300 px-2 py-1 bg-white text-xs leading-6 font-medium text-gray-700 shadow-sm hover:text-gray-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue transition ease-in-out duration-150 sm:leading-5"
+                    >Hide</button>
+                  </span>
+                </div>
               </div>
               <div
-                v-show="!descriptionHidden"
-                class="border-t border-gray-200 px-10 py-8 text-sm bg-gray-50 text-gray-600"
-              ></div>
+                v-show="descriptionHidden"
+                class="border-t border-gray-200 px-10 py-4 text-sm bg-gray-50 text-gray-600"
+              >
+                <div class="flex justify-start">
+                  <span class="mt-3 flex rounded-md shadow-sm sm:mt-0 sm:w-auto">
+                    <button
+                      @click="descriptionHidden = false"
+                      type="button"
+                      class="inline-flex justify-center w-full rounded-md border border-gray-300 px-2 py-1 bg-white text-xs leading-6 font-medium text-gray-700 shadow-sm hover:text-gray-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue transition ease-in-out duration-150 sm:leading-5"
+                    >Learn more about the project</button>
+                  </span>
+                </div>
+              </div>
             </div>
             <div class="flex flex-col flex-wrap">
               <div
@@ -324,7 +258,7 @@
                 ref="inputEditor"
                 @editorDidMount="editorDidMount"
                 class="editor overflow-visible flex-grow w-full"
-                style="min-height: 180px;"
+                style="min-height: 250px;"
                 v-model="input"
                 :options="editorOptions"
                 language="json"
