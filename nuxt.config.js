@@ -87,7 +87,9 @@ export default {
         }
       },
       plugins: [
-        require("tailwindcss")(path.resolve(__dirname, "./tailwind.config.js"))
+        require('postcss-import'),
+        require("tailwindcss")(path.resolve(__dirname, "./tailwind.config.js")),
+        require('autoprefixer'),
       ]
     },
     preset: {

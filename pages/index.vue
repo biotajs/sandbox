@@ -96,7 +96,7 @@
                 v-show="bugCounts[this.caseHash]"
                 class="text-xs text-red-600 underline mr-4"
               >{{`Bug reported for this scenario (${pluralize('time', bugCounts[this.caseHash], true)})` }}</div>-->
-              <dropdown>
+              <!-- <dropdown>
                 <button
                   type="button"
                   class="relative inline-flex items-center px-4 py-2 mr-4 border border-gray-400 text-xs leading-5 font-medium rounded-md text-gray-500 bg-transparent hover:bg-gray-100"
@@ -149,7 +149,7 @@
                     </div>
                   </div>
                 </div>
-              </dropdown>
+              </dropdown>-->
               <button
                 @click="randomSample"
                 type="button"
@@ -193,12 +193,27 @@
                 @editorWillMount="editorWillMount"
                 @editorDidMount="editorDidMount"
                 class="editor overflow-visible flex-grow w-full"
-                style="min-height: 340px;"
+                style="min-height: 280px;"
                 v-model="schema"
                 :options="editorOptions"
                 language="json"
               />
               <!-- <resize-observer class="relative" @notify="(e) => handleResize('schemaEditor')(e)" /> -->
+            </div>
+            <div class="flex flex-col flex-wrap">
+              <div
+                class="border-b border-t border-r border-gray-200 p-3 mb-3 bg-gray-50 text-xs font-bold uppercase"
+              >Input</div>
+              <MonacoEditor
+                ref="inputEditor"
+                @editorDidMount="editorDidMount"
+                class="editor overflow-visible flex-grow w-full"
+                style="min-height: 250px;"
+                v-model="input"
+                :options="editorOptions"
+                language="json"
+              />
+              <!-- <resize-observer class="relative" @notify="(e) => handleResize('inputEditor')(e)" /> -->
             </div>
             <div class="flex flex-col flex-wrap">
               <div
@@ -250,27 +265,17 @@
                 </div>
               </div>
             </div>
-            <div class="flex flex-col flex-wrap">
-              <div
-                class="border-b border-t border-gray-200 p-3 mb-3 bg-gray-50 text-xs font-bold uppercase"
-              >Input</div>
-              <MonacoEditor
-                ref="inputEditor"
-                @editorDidMount="editorDidMount"
-                class="editor overflow-visible flex-grow w-full"
-                style="min-height: 250px;"
-                v-model="input"
-                :options="editorOptions"
-                language="json"
-              />
-              <!-- <resize-observer class="relative" @notify="(e) => handleResize('inputEditor')(e)" /> -->
-            </div>
           </div>
           <div class="w-2/4 flex flex-col flex-wrap border-l border-gray-200">
             <div class="w-full flex flex-col flex-wrap flex-grow">
               <div
-                class="border-b border-r border-gray-200 p-3 mb-3 bg-gray-50 text-xs font-bold uppercase"
-              >Result</div>
+                class="border-b border-r border-gray-200 p-3 mb-3 bg-gray-50 text-xs flex flex-row justify-between items-center"
+              >
+                <span class="uppercase font-bold">Result</span>
+                <span
+                  class="text-gray-400 font-medium"
+                >{{duration > 0 ? `done in ≈ ${duration} ms` : ""}}</span>
+              </div>
               <MonacoEditor
                 ref="outputEditor"
                 @editorDidMount="editorDidMount"
@@ -282,63 +287,121 @@
               />
               <!-- <resize-observer class="relative" @notify="e => handleResize('outputEditor')(e)" /> -->
             </div>
-            <div class="flex flex-col flex-wrap">
-              <!-- <div class="w-full bg-blue-600 p-3 text-white">Infos</div> -->
-              <div class>
+            <div class="flex flex-row flex-wrap justify-start items-stretch">
+              <div class="w-2/5 flew-grow border-r border-gray-200">
                 <div
-                  class="border-b border-t border-r border-gray-200 p-3 bg-gray-50 text-xs font-bold uppercase"
-                >Details</div>
-
+                  class="border-b border-t border-gray-200 p-3 bg-gray-50 text-xs font-bold uppercase"
+                >Configuration</div>
                 <dl>
-                  <div class="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                    <dt class="text-sm leading-5 font-medium text-gray-500">Valid</dt>
-                    <dd
-                      class="mt-1 text-sm font-bold leading-5 text-gray-900 sm:mt-0 sm:col-span-2"
-                      :class="{'text-green-600': outputObj.valid== true, 'text-red-600': outputObj.valid == false}"
-                    >{{ typeof outputObj.valid === undefined ? '-' : outputObj.valid}}</dd>
+                  <div class="grid grid-cols-5 px-4 py-5">
+                    <dt class="col-span-3 text-sm leading-5 font-medium text-gray-500">
+                      <span title="Fast">Fast</span>
+                      <br />
+                      <small class="text-gray-400">Stop on first error</small>
+                      <!-- <svg
+                        class="h-4 w-4 inline"
+                        fill="none"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>-->
+                    </dt>
+                    <dd class="mt-1 text-sm font-bold leading-5 text-gray-900">
+                      <toggle v-model="config.fastMode"></toggle>
+                    </dd>
                   </div>
                 </dl>
                 <dl>
-                  <div class="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                    <dt class="text-sm leading-5 font-medium text-gray-500">Sanitized</dt>
-                    <dd
-                      class="mt-1 text-sm font-bold leading-5 text-gray-900 sm:mt-0 sm:col-span-2"
-                      :class="{'text-orange-500': outputObj.sanitized == true}"
-                    >{{ typeof outputObj.sanitized === undefined ? '-' : outputObj.sanitized}}</dd>
+                  <div class="grid grid-cols-5 px-4 py-5">
+                    <dt class="col-span-3 text-sm leading-5 font-medium text-gray-500">
+                      <span title="Fast">Language</span>
+                      <br />
+                      <small class="text-gray-400">for error messages</small>
+                      <br />
+                      <a
+                        href="https://github.com/biotajs/biota/blob/master/packages/biota-schema/src/factory/templates.ts"
+                        target="_blank"
+                        class="text-gray-400 underline"
+                      >
+                        <small>translations</small>
+                      </a>
+                    </dt>
+                    <dd class="col-span-2 mt-1 text-sm font-bold leading-5 text-gray-900">
+                      <c-select
+                        :value="config.language"
+                        :choices="['en', 'fr']"
+                        @select="(l) => config.language = l"
+                      ></c-select>
+                    </dd>
                   </div>
                 </dl>
               </div>
-              <div v-show="requestFailed" class>
-                <div
-                  class="border-b border-t border-r border-gray-200 p-5 bg-gray-50 text-xs font-bold text-white bg-red-500"
-                >
-                  <p>Sadly the request failed.</p>
-                  <p>An automatic bug report has been sent.</p>
-                </div>
-              </div>
-              <div class>
-                <div
-                  class="border-b border-t border-r border-gray-200 p-3 bg-gray-50 text-xs font-bold uppercase"
-                  :class="{'text-white bg-red-600': outputObj.valid == false, 'text-white bg-green-500': outputObj.valid == true}"
-                >{{pluralize('Error', Array.isArray(outputObj.errors) ? outputObj.errors.length : 0, true)}}</div>
-                <dl v-if="outputObj && Array.isArray(outputObj.errors)">
+              <div class="w-3/5 flex flex-col flex-wrap">
+                <!-- <div class="w-full bg-blue-600 p-3 text-white">Infos</div> -->
+                <div class>
                   <div
-                    v-for="error of outputObj.errors"
-                    :key="error.message"
-                    class="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6"
+                    class="border-b border-t border-r border-gray-200 p-3 bg-gray-50 text-xs font-bold uppercase"
+                  >Details</div>
+
+                  <dl>
+                    <div class="px-4 py-5 grid grid-cols-5 sm:px-6">
+                      <dt class="col-span-3 text-sm leading-5 font-medium text-gray-500">Valid</dt>
+                      <dd
+                        class="col-span-2 mt-1 text-sm font-bold leading-5 text-gray-900 sm:mt-0 sm:col-span-2"
+                        :class="{'text-green-600': outputObj.valid== true, 'text-red-600': outputObj.valid == false}"
+                      >{{ typeof outputObj.valid === undefined ? '-' : outputObj.valid}}</dd>
+                    </div>
+                  </dl>
+                  <dl>
+                    <div class="px-4 py-5 grid grid-cols-5 sm:px-6">
+                      <dt class="col-span-3 text-sm leading-5 font-medium text-gray-500">Sanitized</dt>
+                      <dd
+                        class="col-span-2 mt-1 text-sm font-bold leading-5 text-gray-900 sm:mt-0 sm:col-span-2"
+                        :class="{'text-orange-500': outputObj.sanitized == true}"
+                      >{{ typeof outputObj.sanitized === undefined ? '-' : outputObj.sanitized}}</dd>
+                    </div>
+                  </dl>
+                </div>
+                <div v-show="requestFailed" class>
+                  <div
+                    class="border-b border-t border-r border-gray-200 p-5 bg-gray-50 text-xs font-bold text-white bg-red-500"
                   >
-                    <dt class="text-sm leading-5 font-medium text-red-600">{{error.type}}</dt>
-                    <dd
-                      class="mt-1 text-sm leading-5 text-gray-900 sm:mt-0 sm:col-span-2"
-                    >{{error.message}}</dd>
+                    <p>Sadly the request failed.</p>
+                    <p>An automatic bug report has been sent.</p>
                   </div>
-                </dl>
-                <dl v-else>
-                  <div class="px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                    <dt class="text-sm leading-5 font-medium text-gray-500">-</dt>
-                    <dd class="mt-1 text-sm leading-5 text-gray-900 sm:mt-0 sm:col-span-2">-</dd>
-                  </div>
-                </dl>
+                </div>
+                <div class>
+                  <div
+                    class="border-b border-t border-r border-gray-200 p-3 bg-gray-50 text-xs font-bold uppercase"
+                    :class="{'text-white bg-red-600': outputObj.valid == false, 'text-white bg-green-500': outputObj.valid == true}"
+                  >{{pluralize('Error', Array.isArray(outputObj.errors) ? outputObj.errors.length : 0, true)}}</div>
+                  <dl v-if="outputObj && Array.isArray(outputObj.errors)">
+                    <div
+                      v-for="error of outputObj.errors"
+                      :key="error.message"
+                      class="px-4 py-5 grid grid-cols-5 sm:px-6"
+                    >
+                      <dt
+                        class="col-span-3 text-sm leading-5 font-medium text-red-600"
+                      >{{error.type}}</dt>
+                      <dd
+                        class="col-span-2 mt-1 text-sm leading-5 text-gray-900 sm:mt-0 sm:col-span-2"
+                      >{{error.message}}</dd>
+                    </div>
+                  </dl>
+                  <dl v-else>
+                    <div class="px-4 py-5 grid grid-cols-5 sm:px-6">
+                      <dt class="col-span-3 text-sm leading-5 font-medium text-gray-500">-</dt>
+                      <dd
+                        class="col-span-2 mt-1 text-sm leading-5 text-gray-900 sm:mt-0 sm:col-span-2"
+                      >-</dd>
+                    </div>
+                  </dl>
+                </div>
               </div>
             </div>
           </div>
@@ -353,7 +416,7 @@
                 >Join #biota's channel</a>
               </span>
               <span class="text-xs text-gray-400 underline">
-                <a href="https://github.com/biota-framework/schema" target="_blank">Github Repo</a>
+                <a href="https://github.com/biotajs/biota" target="_blank">Github Repo</a>
               </span>
             </div>
             <div class="ml-4 mt-2 flex-shrink-0">
@@ -379,6 +442,8 @@ import ushash from "ushash";
 
 import { samples } from "./samples";
 import dropdown from "~/components/dropdown";
+import toggle from "~/components/toggle";
+import select from "~/components/select";
 const q = fauna.query;
 import MonacoEditor from "vue-monaco";
 const db = new fauna.Client({ secret: process.env.FAUNA_KEY });
@@ -386,13 +451,20 @@ const db = new fauna.Client({ secret: process.env.FAUNA_KEY });
 export default {
   components: {
     MonacoEditor,
-    dropdown
+    dropdown,
+    toggle,
+    "c-select": select
     // "vue-json-pretty": () => (process.client ? import("vue-json-pretty") : null)
   },
   data() {
     return {
       pluralize,
       samples,
+      duration: 0,
+      config: {
+        fastMode: false,
+        language: "en"
+      },
       descriptionHidden: false,
       schema: ``,
       input: ``,
@@ -425,6 +497,11 @@ export default {
     this.schema = localStorage.getItem("schema") || ``;
     this.input = localStorage.getItem("input") || ``;
     this.output = localStorage.getItem("output") || ``;
+    try {
+      this.config = JSON.parse(localStorage.getItem("config")) || {};
+    } catch (error) {
+      console.error(error);
+    }
     this.descriptionHidden = localStorage.getItem("descriptionHidden") || false;
 
     try {
@@ -504,18 +581,27 @@ export default {
             value = new fauna.Expr(value);
           }
         }
+        const startTime = new Date().getTime();
         const results = await db.query(
           q.Call(
-            "biota.schema@0.0.1+Validate",
+            "biota.schema@0.0.11+Validate",
             {},
             {
               value,
               options: {
                 validate: JSON.parse(this.schema)
+              },
+              state: {
+                full: !this.config.fastMode,
+                language: this.config.language
               }
             }
           )
         );
+        const endTime = new Date().getTime();
+        this.duration = endTime - startTime;
+
+        console.log("duration", this.duration);
 
         console.log("Done with:", results);
         this.output = JSON.stringify(results.response, null, 2);
@@ -620,6 +706,12 @@ export default {
     },
     output(output) {
       localStorage.setItem("output", output);
+    },
+    config: {
+      handler(config) {
+        localStorage.setItem("config", JSON.stringify(config));
+      },
+      deep: true
     },
     bugCounts(bugCounts) {
       localStorage.setItem("bugCounts", JSON.stringify(bugCounts));

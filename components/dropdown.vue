@@ -35,12 +35,12 @@
       >
         <div class="rounded-md bg-white shadow-xs">
           <div class="py-1">
-            <slot name="content" :close="() => isOpen = false" >
+            <slot name="content" :close="() => isOpen = false">
               <div
                 v-for="item of Object.entries(items || {})"
                 :key="item[0]"
                 class="block px-4 py-2 text-sm leading-5 text-gray-700 hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus:bg-gray-100 focus:text-gray-900"
-                :class="{'border-t border-gray-100 bg-gray-100': typeof item[1] === 'boolean', 'cursor-pointer': typeof item[1] !== 'boolean'}"
+                :class="{'border-t border-gray-100 bg-gray-100 pointer-events-none font-bold': typeof item[1] === 'boolean', 'cursor-pointer': typeof item[1] !== 'boolean'}"
                 @click="click(item[0])"
               >{{item[0]}}</div>
             </slot>
@@ -60,8 +60,10 @@ export default {
   }),
   methods: {
     click(item) {
-      this.$emit("choice", item);
-      this.isOpen = !this.isOpen;
+      if (typeof item[1] !== "boolean") {
+        this.$emit("choice", item);
+        this.isOpen = !this.isOpen;
+      }
     },
     close(e) {
       if (!this.$el.contains(e.target)) {
